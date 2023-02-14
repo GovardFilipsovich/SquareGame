@@ -94,6 +94,7 @@ void phisics(struct Scene* sc){
 }
 
 void draw(struct Scene* scene){
+  //this function draw scene
   struct Square* sq = scene->sq;
   
   al_clear_to_color(al_map_rgb(255, 255, 255));
