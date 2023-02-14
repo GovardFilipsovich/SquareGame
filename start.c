@@ -3,6 +3,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #define Y_MAX 600
+#define X_MAX 800
 
 struct Square{
   int x;
@@ -18,7 +19,14 @@ struct Beam{
   int start_y;
   int end_x;
   int end_y;
-}
+};
+
+struct Scene{
+  int g;
+  struct Beam** beams;
+  struct Square* sq;
+  int size;
+};
 
 int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** disp){
   if(!al_init())
@@ -46,7 +54,7 @@ int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** d
       return 1;
     }
 
-  *disp = al_create_display(800, Y_MAX);
+  *disp = al_create_display(X_MAX, Y_MAX);
   if(!disp)
     {
       printf("couldn't initialize display\n");
@@ -67,7 +75,10 @@ void event_register(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DI
   al_register_event_source(queue, al_get_timer_event_source(timer));
 }
 
-void phisics(struct Square* sq, int g){
+void phisics(struct Scene* sc){
+  struct Square* sq = sc->sq;
+  int g = sc->g;
+  
   if(sq->y + sq->speed_y >= Y_MAX - sq->size){
     sq->speed_y = 0;
     sq->y += (Y_MAX - sq->y - sq->size);
@@ -82,9 +93,29 @@ void phisics(struct Square* sq, int g){
   
 }
 
+void draw(struct Scene* scene){
+  struct Square* sq = scene->sq;
+  
+  al_clear_to_color(al_map_rgb(255, 255, 255));
+  al_draw_filled_rectangle(sq->x, sq->y, sq->x+sq->size, sq->y+sq->size, al_map_rgb_f(0, 1, 0));
+  for(int i = 0; i < scene->size; i++){
+    struct Beam* b = scene->beams[i];
+    al_draw_line(b->start_x, b->start_y, b->end_x, b->end_y, al_map_rgb_f(0,0,0), 1);
+    }
+  al_flip_display();
+}
+
+void add_line(struct Beam* beam, struct Scene* scene){
+  scene->size += 1;
+  scene->beams = realloc(scene->beams, scene->size * sizeof(struct Beam*));
+  scene->beams[scene->size-1] = beam;
+}
+
 void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp){
   struct Square sq = {0,Y_MAX,50,0,0,0};
-  int g = 5;
+  struct Scene scene = {.g = 5, .beams = (struct Beam**)malloc(1 * sizeof(struct Beam*)), .sq = &sq, .size=0};
+  add_line(&((struct Beam){0, Y_MAX/2, X_MAX/2, Y_MAX/2}), &scene);
+  add_line(&((struct Beam){X_MAX/2, Y_MAX/2, X_MAX/2, Y_MAX}), &scene);
   bool done = false;
   bool redraw = true;
   ALLEGRO_EVENT event;
@@ -96,12 +127,12 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
       switch(event.type)
         {
 	case ALLEGRO_EVENT_TIMER:
-	  phisics(&sq, g);
+	  phisics(&scene);
 	  redraw = true;
 	  break;
 	case ALLEGRO_EVENT_KEY_DOWN:
 	  if(event.keyboard.keycode == ALLEGRO_KEY_UP)
-            sq.a_y = 10;
+            sq.a_y = 11;
 	  else if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
 	    done = true;
 	  break;
@@ -115,13 +146,12 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
 
       if(redraw && al_is_event_queue_empty(queue))
         {
-	  al_clear_to_color(al_map_rgb(255, 255, 255));
-	  al_draw_filled_rectangle(sq.x, sq.y, sq.x+sq.size, sq.y+sq.size, al_map_rgb_f(0, 1, 0));
-	  al_flip_display();
-
+	  draw(&scene);
 	  redraw = false;
         }
     }
+
+  free(scene.beams);
 
 }
 
