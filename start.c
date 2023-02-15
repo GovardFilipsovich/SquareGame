@@ -6,6 +6,7 @@
 #define X_MAX 800
 #define MAX_ACCEL 3
 #define MAX_SPEED 20
+#define ACC_CONST 0.2
 
 struct Square{
   float x;
@@ -98,9 +99,9 @@ void phisics(struct Scene* sc){
   sq->speed_x += sq->a_x;
   sq->x += sq->speed_x;
   if (sq->accel == 1)
-    sq->a_x += 0.1;
+    sq->a_x += ACC_CONST;
   else if (sq->accel == -1)
-    sq->a_x -= 0.1;
+    sq->a_x -= ACC_CONST;
   else if (sq->accel == 0)
     sq->a_x = 0;
 
@@ -114,6 +115,8 @@ void phisics(struct Scene* sc){
     sq->speed_x -= 1;
   else if (sq->speed_x < 0)
     sq->speed_x += 1;
+
+  sq->speed_x = (abs(sq->speed_x) < 1) ? 0 : sq->speed_x;
   
   
 }
@@ -171,6 +174,7 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
 	    sq.accel = 0;
 	  else if (event.keyboard.keycode == ALLEGRO_KEY_LEFT)
 	    sq.accel = 0;
+	  
 	  break;
 	case ALLEGRO_EVENT_DISPLAY_CLOSE:
 	  done = true;
