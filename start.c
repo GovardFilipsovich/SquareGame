@@ -2,11 +2,16 @@
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_primitives.h>
 
+// defining constants
 #define Y_MAX 600
 #define X_MAX 800
 #define MAX_ACCEL 3
 #define MAX_SPEED 20
 #define ACC_CONST 0.2
+
+//defining events
+#define MY_CROSS_EVENT ALLEGRO_GET_EVENT_TYPE('m', 's', 'e', 't')
+
 
 struct Square{
   float x;
@@ -33,7 +38,7 @@ struct Scene{
   int size;
 };
 
-int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** disp){
+int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** disp, ALLEGRO_EVENT_SOURCE* user_src){
   if(!al_init())
     {
       printf("couldn't initialize allegro\n");
@@ -66,18 +71,26 @@ int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** d
       return 1;
     }
 
+  al_init_user_event_source(user_src);
+
 }
 
-void all_destroy(ALLEGRO_TIMER* timer, ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_DISPLAY* disp){
+void all_destroy(ALLEGRO_TIMER* timer, ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_DISPLAY* disp, ALLEGRO_EVENT_SOURCE* user_src){
   al_destroy_display(disp);
   al_destroy_timer(timer);
   al_destroy_event_queue(queue);
+  al_destroy_user_event_source(user_src);
 }
 
-void event_register(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp){
+void event_register(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp, ALLEGRO_EVENT_SOURCE* user_src){
   al_register_event_source(queue, al_get_keyboard_event_source());
   al_register_event_source(queue, al_get_display_event_source(disp));
   al_register_event_source(queue, al_get_timer_event_source(timer));
+  al_register_event_source(queue, user_src);
+}
+
+void check_cross_lines(struct Scene* sc){
+  
 }
 
 void phisics(struct Scene* sc){
@@ -117,7 +130,8 @@ void phisics(struct Scene* sc){
     sq->speed_x += 1;
 
   sq->speed_x = (abs(sq->speed_x) < 1) ? 0 : sq->speed_x;
-  
+
+  check_cross_lines(sc);
   
 }
 
@@ -141,13 +155,16 @@ void add_line(struct Beam* beam, struct Scene* scene){
 }
 
 void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp){
+  
   struct Square sq = {0,Y_MAX,50,0,0,0};
   struct Scene scene = {.g = 5, .beams = (struct Beam**)malloc(1 * sizeof(struct Beam*)), .sq = &sq, .size=0};
   add_line(&((struct Beam){0, Y_MAX/2, X_MAX/2, Y_MAX/2}), &scene);
   add_line(&((struct Beam){X_MAX/2, Y_MAX/2, X_MAX/2, Y_MAX}), &scene);
   bool done = false;
   bool redraw = true;
+  
   ALLEGRO_EVENT event;
+  ALLEGRO_EVENT user_event;
 
   al_start_timer(timer);
   while(1)
@@ -200,15 +217,17 @@ int main()
   ALLEGRO_TIMER* timer;
   ALLEGRO_EVENT_QUEUE* queue;
   ALLEGRO_DISPLAY* disp;
+  ALLEGRO_EVENT_SOURCE user_src;
   
   
-  init(&timer, &queue, &disp);
+  
+  init(&timer, &queue, &disp, &user_src);
     
-  event_register(queue, timer, disp);
+  event_register(queue, timer, disp, &user_src);
 
   loop(queue, timer, disp);
     
-  all_destroy(timer, queue, disp);
+  all_destroy(timer, queue, disp, &user_src);
 
     
   return 0;
