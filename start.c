@@ -36,7 +36,14 @@ struct Scene{
   struct Beam** beams;
   struct Square* sq;
   int size;
+  struct USER_EVENT* user_event;
 };
+
+struct USER_EVENT{
+  ALLEGRO_EVENT_SOURCE* user_src;
+  ALLEGRO_EVENT* user_event;
+};
+
 
 int init(ALLEGRO_TIMER** timer, ALLEGRO_EVENT_QUEUE** queue, ALLEGRO_DISPLAY** disp, ALLEGRO_EVENT_SOURCE* user_src){
   if(!al_init())
@@ -90,7 +97,12 @@ void event_register(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DI
 }
 
 void check_cross_lines(struct Scene* sc){
-  
+  struct USER_EVENT* u_e = sc->user_event;
+  u_e->user_event->type = MY_CROSS_EVENT;
+  for (int i = 0; i < sc->size; i++){
+    
+    al_emit_user_event(u_e->user_src, u_e->user_event, NULL);
+  }
 }
 
 void phisics(struct Scene* sc){
@@ -154,7 +166,7 @@ void add_line(struct Beam* beam, struct Scene* scene){
   scene->beams[scene->size-1] = beam;
 }
 
-void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp){
+void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* disp, ALLEGRO_EVENT_SOURCE* user_src){
   
   struct Square sq = {0,Y_MAX,50,0,0,0};
   struct Scene scene = {.g = 5, .beams = (struct Beam**)malloc(1 * sizeof(struct Beam*)), .sq = &sq, .size=0};
@@ -164,7 +176,10 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
   bool redraw = true;
   
   ALLEGRO_EVENT event;
-  ALLEGRO_EVENT user_event;
+  ALLEGRO_EVENT user_e;
+
+  struct USER_EVENT user_event = {user_src, &user_e};
+  scene.user_event = &user_event;
 
   al_start_timer(timer);
   while(1)
@@ -196,6 +211,8 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
 	case ALLEGRO_EVENT_DISPLAY_CLOSE:
 	  done = true;
 	  break;
+	case MY_CROSS_EVENT:
+	  printf("Hello from event\n");
         }
 
       if(done)
@@ -225,7 +242,7 @@ int main()
     
   event_register(queue, timer, disp, &user_src);
 
-  loop(queue, timer, disp);
+  loop(queue, timer, disp, &user_src);
     
   all_destroy(timer, queue, disp, &user_src);
 
