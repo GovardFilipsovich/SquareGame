@@ -4,14 +4,18 @@
 
 #define Y_MAX 600
 #define X_MAX 800
+#define MAX_ACCEL 3
+#define MAX_SPEED 20
 
 struct Square{
-  int x;
-  int y;
-  int size;
-  int speed_y;
-  int speed_x;
-  int a_y;
+  float x;
+  float y;
+  float size;
+  float speed_y;
+  float speed_x;
+  float a_y;
+  float a_x;
+  float accel;
 };
 
 struct Beam{
@@ -89,6 +93,27 @@ void phisics(struct Scene* sc){
 
   if (sq->a_y != 0)
     sq->a_y -= 1;
+
+
+  sq->speed_x += sq->a_x;
+  sq->x += sq->speed_x;
+  if (sq->accel == 1)
+    sq->a_x += 0.1;
+  else if (sq->accel == -1)
+    sq->a_x -= 0.1;
+  else if (sq->accel == 0)
+    sq->a_x = 0;
+
+  // Limit max acceleration
+  sq->accel = (sq->accel >= MAX_ACCEL) ? MAX_ACCEL : (sq->accel <= -MAX_ACCEL) ? -MAX_ACCEL : sq->accel;
+
+  // Limit max speed
+  sq->speed_x = (sq->speed_x >= MAX_SPEED) ? MAX_SPEED : (sq->speed_x <= -MAX_SPEED) ? -MAX_SPEED : sq->speed_x;
+  
+  if(sq->speed_x > 0)
+    sq->speed_x -= 1;
+  else if (sq->speed_x < 0)
+    sq->speed_x += 1;
   
   
 }
@@ -136,6 +161,16 @@ void loop(ALLEGRO_EVENT_QUEUE* queue, ALLEGRO_TIMER* timer, ALLEGRO_DISPLAY* dis
             sq.a_y = 11;
 	  else if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
 	    done = true;
+	  else if (event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
+	    sq.accel = 1;
+	  else if (event.keyboard.keycode == ALLEGRO_KEY_LEFT)
+	    sq.accel = -1;
+	  break;
+	case ALLEGRO_EVENT_KEY_UP:
+	  if (event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
+	    sq.accel = 0;
+	  else if (event.keyboard.keycode == ALLEGRO_KEY_LEFT)
+	    sq.accel = 0;
 	  break;
 	case ALLEGRO_EVENT_DISPLAY_CLOSE:
 	  done = true;
